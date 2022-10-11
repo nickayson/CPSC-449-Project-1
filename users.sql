@@ -1,0 +1,8 @@
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "users" (
+	"id"	INTEGER,
+	"username"	TEXT,
+	"password"	TEXT,
+	PRIMARY KEY("id")
+);
+COMMIT;
