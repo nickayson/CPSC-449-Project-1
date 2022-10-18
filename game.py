@@ -61,7 +61,7 @@ async def newGame():
 
     id = await db.execute(
         """
-        INSERT INTO game( wordId, userId)
+        INSERT INTO game(wordId, userId)
         VALUES(:wordId, :userId)
         """,
         data)
