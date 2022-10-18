@@ -7,6 +7,7 @@ from quart import Quart, g, request, jsonify, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from quart_schema import validate_request, RequestSchemaValidationError
 import sqlite3
+import toml
 
 app = Quart(__name__)
 
@@ -24,7 +25,7 @@ class loginData:
 async def _get_db():
     db = getattr(g, "_sqlite_db", None)
     if db is None:
-        db = g._sqlite_db = databases.Database('sqlite+aiosqlite:/user.db')
+        db = g._sqlite_db = databases.Database('sqlite+aiosqlite:///var/wordle.db')
         await db.connect()
     return db
 
