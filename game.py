@@ -50,9 +50,9 @@ async def newGame():
     words = await db.fetch_all("SELECT * FROM words")
     num = random.randrange(0, len(words), 1)
 
-    username = request.args.get("username").lower()
+    userId = request.args.get("userId").lower()
 
-    user = await db.fetch_one("SELECT * FROM userData WHERE username=:username", values={"username": username})
+    user = await db.fetch_one("SELECT * FROM userData WHERE id=:userId", values={"userId": userId})
 
     if not(user):
         return {"message": "Could not find this user"}, 404
@@ -70,7 +70,7 @@ async def newGame():
     return res, 201
 
 
-@app.route("/game/guess/<int:gameId>", methods=["POST"])
+@app.route("/game/<int:gameId>/guess", methods=["POST"])
 async def guess(gameId):
     db = await _get_db()
 
@@ -81,39 +81,71 @@ async def guess(gameId):
     if not(game):
         return {"message": "Could not find a game with this id"}, 404
 
-    username = body.get("username").lower()
+    userId = body.get("userId").lower()
     word = body.get("word")
 
-    user = await db.fetch_one("SELECT * FROM userData WHERE username=:username", values={"username": username})
+    user = await db.fetch_one("SELECT * FROM userData WHERE id=:userId", values={"userId": userId})
 
     if not(user):
         return {"message": "Could not find this user"}, 404
 
-    # TODO Check if game is finished
-
+    # Check if game is finished
+    if game[4] == 1:
+        return {"message": "Game is finished already"}, 400
 
     # Check if word is valid
-    wordIsValid = False
+    secretWord = await db.fetch_one("SELECT word FROM words WHERE id=:id", values={"id": game[2]})
+    secretWord = secretWord[0]
+
+    wordIsValid = True
+
+    if len(word) != len(secretWord):
+        wordIsValid = False
 
     if not(wordIsValid):
         return {"message": "Word is invalid", "valid": False}, 400
 
     # If word is valid
-
     # Check if correct word
-    secretWord = await db.fetch_one("SELECT word from words WHERE id=:id", values={"id": game[2]})
     wordIsCorrect = word == secretWord
 
     # If word is correct
     if wordIsCorrect:
         return {"valid": True, "guess": True, "numGuesses": game[3]}
 
-    # TODO If word is not correct
+    # If word is not correct
+    # Decrease guess count
+    await db.execute("UPDATE game SET guesses=:numGuess, finished=:finished WHERE id=:id", 
+        values={"numGuess": game[3] - 1, "id": game[0], "finished": 1 if game[3] - 1 <= 0 else 0})
 
-    # TODO Decrease guess count
+    matched = []
+    valid = []
 
-    # TODO If guess count is 0, game is finished
-    return {"valid": True, "guess": False}
+    for i in range(len(secretWord)):
+        correct = word[i] == secretWord[i]
+        valid.append({"inSecret": correct, "wrongSpot": False, "used": True if correct else False})
+        matched.append(correct)
+
+    for i in range(len(secretWord)):
+        currentLetter = secretWord[i]
+        for j in range(len(secretWord)):
+            if i != j:
+                if not(matched[i]) and not(valid[j].get("used")):
+                    if word[j] == currentLetter:
+                        valid[j].update({"inSecret": True, "wrongSpot": True, "used": True})
+                        matched[i] = True
+
+    data = []
+    index = 0
+
+    for i in word:
+        d = {}
+        del valid[index]["used"]
+        d[i] = valid[index]
+        data.append(d)
+        index += 1
+
+    return {"valid": True, "guess": False, "numGuesses": game[3] - 1, "data": data}
 
 
 @app.route("/user/<int:userId>/games", methods=["GET"])
