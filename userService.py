@@ -64,7 +64,7 @@ async def register_user(data):
         abort(409, e)
     
     userData["id"] = id      
-    return userData, 201, {"Location": f"/user/{id}"}
+    return jsonify({"statusCode": 200, "message": "Successfully registered!"})
 
 @app.errorhandler(RequestSchemaValidationError)
 def bad_request(e):
