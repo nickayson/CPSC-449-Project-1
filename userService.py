@@ -25,7 +25,7 @@ class loginData:
 async def _get_db():
     db = getattr(g, "_sqlite_db", None)
     if db is None:
-        db = g._sqlite_db = databases.Database('sqlite+aiosqlite:/user.db')
+        db = g._sqlite_db = databases.Database('sqlite+aiosqlite:///var/wordle.db')
         await db.connect()
     return db
 
