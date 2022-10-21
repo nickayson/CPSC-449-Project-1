@@ -90,7 +90,7 @@ SEARCH_PARAMS = [
 ]
 
 #-------------Authenticating the credentials for Login----------------
-@app.route('/login', methods=['GET'])
+@app.route('/auth', methods=['GET'])
 async def authenticate():
     query_parameters = request.args
     #db = await _get_db()    
@@ -132,7 +132,7 @@ async def authenticate():
     for key in result_dict:
         if(request.authorization.password==result_dict[key] and request.authorization.username==key  ) :        
             return jsonify({"statusCode": 200, "authenticated": "true"})   
-     
+    # WWW-Authenticate error for 401
     return jsonify({"statusCode": 401, "error": "Unauthorized", "message": "Login failed !" })     
     
     
