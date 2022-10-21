@@ -211,7 +211,7 @@ async def updateGameState(game, word, db, finished = 0):
 
 # ---------------CREATE NEW GAME---------------
 
-@app.route("/game/create-new-game", methods=["POST"])
+@app.route("/game", methods=["POST"])
 async def newGame():
     db = await _get_db()
 
@@ -251,7 +251,7 @@ def userNotFound(e):
 
 # ---------------GUESS A WORD---------------
 
-@app.route("/game/<int:gameId>/guess", methods=["PATCH"])
+@app.route("/game/<int:gameId>", methods=["PATCH"])
 async def guess(gameId):
     db = await _get_db()
 
@@ -364,7 +364,6 @@ async def getGame(gameId):
         return {"message": "No game found with this id"}, 404
     
     return await gameStateToDict(game)
-    # return {"gameId": game[0], "guesses": game[3], "finished": True if game[4] == 1 else False}
 
 # game
 # 0 = id
