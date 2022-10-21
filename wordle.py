@@ -269,6 +269,9 @@ async def guess(gameId):
     if not(game):
         abort(404, "Could not find a game with this id")
 
+    if int(userId) != game[1]:
+        abort(400, "This game does not belong to this user")
+
     user = await db.fetch_one("SELECT * FROM userData WHERE id=:userId", values={"userId": userId})
 
     # Check if user exists
