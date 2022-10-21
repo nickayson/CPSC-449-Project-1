@@ -1,5 +1,6 @@
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
+DROP TABLE IF EXISTS "valid";
 CREATE TABLE IF NOT EXISTS "valid" (
 	"id"	INTEGER,
 	"word"	TEXT,
@@ -12552,6 +12553,7 @@ INSERT INTO valid VALUES(12544,'zygon');
 INSERT INTO valid VALUES(12545,'zymes');
 INSERT INTO valid VALUES(12546,'zymic');
 
+DROP TABLE IF EXISTS "correct";
 CREATE TABLE IF NOT EXISTS "correct" (
 	"id"	INTEGER,
 	"word"	TEXT,
@@ -14867,19 +14869,8 @@ INSERT INTO correct VALUES(2307,'flack');
 INSERT INTO correct VALUES(2308,'widow');
 INSERT INTO correct VALUES(2309,'augur');
 
-DROP TABLE IF EXISTS words;
-CREATE TABLE words(id INTEGER PRIMARY KEY, word TEXT);
-INSERT INTO words VALUES(1,'apple');
-INSERT INTO words VALUES(2,'peach');
-INSERT INTO words VALUES(3,'bacon');
-INSERT INTO words VALUES(4,'badge');
-INSERT INTO words VALUES(5,'badly');
-INSERT INTO words VALUES(6,'bagel');
-INSERT INTO words VALUES(7,'baggy');
-INSERT INTO words VALUES(8,'baker');
-
-DROP TABLE IF EXISTS game;
-CREATE TABLE game(
+DROP TABLE IF EXISTS "game";
+CREATE TABLE "game"(
     id INTEGER PRIMARY KEY, 
     userId INTEGER,
     wordId INTEGER,
@@ -14895,6 +14886,7 @@ CREATE TABLE game(
     FOREIGN KEY(wordId) REFERENCES correct(id)
 );
 
+DROP TABLE IF EXISTS "userData";
 CREATE TABLE IF NOT EXISTS "userData" (
 	"id"	INTEGER,
 	"username"	TEXT,
@@ -14904,6 +14896,5 @@ CREATE TABLE IF NOT EXISTS "userData" (
 INSERT INTO userData VALUES(1,'Debdyuti','deb@123');
 INSERT INTO userData VALUES(2,'Nick','nick123$');
 INSERT INTO userData VALUES(3,'john','goodpw');
-INSERT INTO userData VALUES(12,'Roy',' roy@123');
-INSERT INTO userData VALUES(19,'Bob','bob123^');
+INSERT INTO userData VALUES(4,'Sravani',' vani@123');
 COMMIT;
