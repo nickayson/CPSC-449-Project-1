@@ -5,13 +5,14 @@ from operator import itemgetter
 import databases
 from quart import Quart, g, request, jsonify, abort
 from werkzeug.security import generate_password_hash, check_password_hash
-from quart_schema import validate_request, RequestSchemaValidationError
+from quart_schema import validate_request, RequestSchemaValidationError, QuartSchema
 import sqlite3
 import toml
 import random
 
 app = Quart(__name__)
-# app.config.from_file(f"./etc/{__name__}.toml", toml.load)
+QuartSchema(app)
+app.config.from_file(f"./etc/{__name__}.toml", toml.load)
 
 @dataclasses.dataclass
 class userData:
@@ -27,7 +28,7 @@ class loginData:
 async def _get_db():
     db = getattr(g, "_sqlite_db", None)
     if db is None:
-        db = g._sqlite_db = databases.Database('sqlite+aiosqlite:///var/wordle.db')
+        db = g._sqlite_db = databases.Database(app.config["DATABASES"]["URL"])
         await db.connect()
     return db
 
@@ -341,6 +342,9 @@ async def myGames(userId):
 
     for game in gamesList:
         res.append({"gameId": game.get("id"), "guessesLeft": game.get("guesses"), "finished": True if game.get("finished") == 1 else False})
+        
+    if not(games):
+        return {"message": "No games found with this id"}, 404
 
     return res
 

@@ -1,2 +1,1 @@
-app: hypercorn userService --reload --debug --bind userService.local.gd:$PORT --access-logfile - --error-logfile - --log-level DEBUG
-game: hypercorn game --reload --debug --bind books.local.gd:$PORT --access-logfile - --error-logfile - --log-level DEBUG
+app: hypercorn wordle --reload --debug --bind wordle.local.gd:$PORT --access-logfile - --error-logfile - --log-level DEBUG
