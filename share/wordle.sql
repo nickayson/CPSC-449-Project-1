@@ -14893,8 +14893,4 @@ CREATE TABLE IF NOT EXISTS "userData" (
 	"password"	TEXT,
 	PRIMARY KEY("id")
 );
-INSERT INTO userData VALUES(1,'Debdyuti','deb@123');
-INSERT INTO userData VALUES(2,'Nick','nick123$');
-INSERT INTO userData VALUES(3,'john','goodpw');
-INSERT INTO userData VALUES(4,'Sravani',' vani@123');
 COMMIT;

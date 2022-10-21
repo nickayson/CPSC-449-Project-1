@@ -10,7 +10,7 @@ import random
 
 app = Quart(__name__)
 QuartSchema(app)
-app.config.from_file(f"./etc/{__name__}.toml", toml.load)
+# app.config.from_file(f"./etc/{__name__}.toml", toml.load)
 
 @dataclasses.dataclass
 class userData:
@@ -21,7 +21,8 @@ class userData:
 async def _get_db():
     db = getattr(g, "_sqlite_db", None)
     if db is None:
-        db = g._sqlite_db = databases.Database(app.config["DATABASES"]["URL"])
+        # db = g._sqlite_db = databases.Database(app.config["DATABASES"]["URL"])
+        db = g._sqlite_db = databases.Database('sqlite+aiosqlite:/var/wordle.db')
         await db.connect()
     return db
 

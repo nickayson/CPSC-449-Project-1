@@ -30,6 +30,13 @@ The following are the steps to run the project:
     Run the following commands:     
     > foreman start   
 
+Configuration files:
+1. Run init.sh to populate the database and automatically connect the api to the database. 
+    > sh init.sh
+
+    Inside the file it contains directions to wordle.sql which is a sql script that will populate 
+    the database.
+2. Procfile is a mechanism for declaring what commands are run by your application to start the app 
 
 Now, you will be to see that the one Quart application run on the port configured in the Procfile.
 Now the API can be tested either using Postman(the method which we followed) or using curl or httpie.
