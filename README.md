@@ -2,6 +2,13 @@
 
 Guided by Professor: Kenytt Avery @ProfAvery
 
+# Project Members:
+
+1. Nicholas Ayson
+2. Debdyuti Das
+3. Peining Lo
+4. Sravani Kallmepudi
+
 # Project description: 
 
 This project involves creating two microservices: Users & Games for a Word game RESTful service. It consists of one Quart application connected to a  single SQLite Version 3 database.
