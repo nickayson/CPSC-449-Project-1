@@ -1,3 +1,3 @@
 #!/bin/sh
 
-sqlite3 ./var/wordle.db < ./share/wordle.sql
+sqlite3 wordle.db < wordle.sql
