@@ -256,8 +256,8 @@ async def guess(gameId):
 
     body = await request.get_json()
 
-    userId = body.get("userId").lower()
-    word = body.get("word")
+    userId = body.get("userId")
+    word = body.get("word").lower()
 
     if not(userId) or not(word):
         abort(400, "Please provide the user id and the guess word")
