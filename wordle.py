@@ -1,10 +1,8 @@
 import dataclasses
 import collections
-from this import d
 from operator import itemgetter
 import databases
 from quart import Quart, g, request, jsonify, abort
-from werkzeug.security import generate_password_hash, check_password_hash
 from quart_schema import validate_request, RequestSchemaValidationError, QuartSchema
 import sqlite3
 import toml
@@ -17,11 +15,6 @@ app.config.from_file(f"./etc/{__name__}.toml", toml.load)
 @dataclasses.dataclass
 class userData:
     id: int
-    username: str
-    password: str
-
-@dataclasses.dataclass
-class loginData:    
     username: str
     password: str
 
@@ -97,13 +90,11 @@ SEARCH_PARAMS = [
 ]
 
 #-------------Authenticating the credentials for Login----------------
-@app.route('/login', methods=['POST'])
-@validate_request(loginData)
-async def authenticate(data):
+@app.route('/login', methods=['GET'])
+async def authenticate():
     query_parameters = request.args
-    db = await _get_db()   
-    
-    loginData= dataclasses.asdict(data)   
+    #db = await _get_db()    
+      
     
     sql = "SELECT username,password FROM userData"
     conditions = []
@@ -122,7 +113,8 @@ async def authenticate(data):
     app.logger.debug(sql)
 
     db = await _get_db()
-    results = await db.fetch_all(sql, values)    
+    results = await db.fetch_all(sql, values)  
+   
     
     my_list= list(map(dict, results))    
     pwd = list(map(itemgetter('password'), my_list))
@@ -136,12 +128,13 @@ async def authenticate(data):
              pwd.remove(value)
              break      
     
+
     for key in result_dict:
-        if(loginData['password']==result_dict[key] and loginData['username']==key  ) :        
+        if(request.authorization.password==result_dict[key] and request.authorization.username==key  ) :        
             return jsonify({"statusCode": 200, "authenticated": "true"})   
      
     return jsonify({"statusCode": 401, "error": "Unauthorized", "message": "Login failed !" })     
-   
+    
     
 # ---------------GAME API---------------
 
