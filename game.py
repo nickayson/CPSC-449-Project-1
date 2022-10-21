@@ -43,19 +43,23 @@ async def close_connection(exception):
     if db is not None:
         await db.disconnect()
 
-
-@app.route("/game/create-new-game", methods=["GET"])
+@app.route("/game/create-new-game", methods=["POST"])
 async def newGame():
     db = await _get_db()
-    words = await db.fetch_all("SELECT * FROM words")
-    num = random.randrange(0, len(words), 1)
 
-    userId = request.args.get("userId").lower()
+    body = await request.get_json()
+    userId = body.get("userId")
+
+    if not(userId):
+        abort(400, "Please provide the user id")
 
     user = await db.fetch_one("SELECT * FROM userData WHERE id=:userId", values={"userId": userId})
 
     if not(user):
-        return {"message": "Could not find this user"}, 404
+        abort(404, "Could not find user with this id")
+
+    words = await db.fetch_all("SELECT * FROM correct")
+    num = random.randrange(0, len(words), 1)
 
     data = {"wordId": words[num][0], "userId": user[0]}
 
@@ -69,54 +73,17 @@ async def newGame():
     res = {"gameId": id, "guesses": 6}
     return res, 201
 
+@app.errorhandler(400)
+def noUserId(msg):
+    return {"error": str(msg).split(':', 1)[1][1:]}, 400
 
-@app.route("/game/<int:gameId>/guess", methods=["POST"])
-async def guess(gameId):
-    db = await _get_db()
+@app.errorhandler(404)
+def userNotFound(msg):
+    return {"error": str(msg).split(':', 1)[1][1:]}, 404
 
-    body = await request.get_json()
-
-    game = await db.fetch_one("SELECT * FROM game WHERE id=:id", values={"id": gameId})
-
-    if not(game):
-        return {"message": "Could not find a game with this id"}, 404
-
-    userId = body.get("userId").lower()
-    word = body.get("word")
-
-    user = await db.fetch_one("SELECT * FROM userData WHERE id=:userId", values={"userId": userId})
-
-    if not(user):
-        return {"message": "Could not find this user"}, 404
-
-    # Check if game is finished
-    if game[4] == 1:
-        return {"message": "Game is finished already"}, 400
-
-    # Check if word is valid
-    secretWord = await db.fetch_one("SELECT word FROM words WHERE id=:id", values={"id": game[2]})
-    secretWord = secretWord[0]
-
-    wordIsValid = True
-
-    if len(word) != len(secretWord):
-        wordIsValid = False
-
-    if not(wordIsValid):
-        return {"message": "Word is invalid", "valid": False}, 400
-
-    # If word is valid
-    # Check if correct word
-    wordIsCorrect = word == secretWord
-
-    # If word is correct
-    if wordIsCorrect:
-        return {"valid": True, "guess": True, "numGuesses": game[3]}
-
-    # If word is not correct
-    # Decrease guess count
-    await db.execute("UPDATE game SET guesses=:numGuess, finished=:finished WHERE id=:id", 
-        values={"numGuess": game[3] - 1, "id": game[0], "finished": 1 if game[3] - 1 <= 0 else 0})
+def getGuessState(guess, secret):
+    word = guess
+    secretWord = secret
 
     matched = []
     valid = []
@@ -145,7 +112,111 @@ async def guess(gameId):
         data.append(d)
         index += 1
 
-    return {"valid": True, "guess": False, "numGuesses": game[3] - 1, "data": data}
+    return data
+
+async def gameStateToDict(game):
+    db = await _get_db()
+    secretWord = await db.fetch_one("SELECT word FROM correct WHERE id=:id", values={"id": game[2]})
+    secretWord = secretWord[0]
+
+    state = {"guessesLeft": game[3], "finished": game[4], "gussedWords": []}
+
+    timeGuessed = 6 - game[3]
+    guessedWords = []
+
+    for i in range(timeGuessed):
+        word = game[i + 5]
+        wordState = {word: getGuessState(word, secretWord)}
+        guessedWords.append(wordState)
+
+    state["gussedWords"] = guessedWords
+
+    return state
+
+async def updateGameState(game, word, db, finished = 0):
+    numGuesses = game[3]
+    nthGuess = 6 - numGuesses + 1
+
+    sql = "UPDATE game SET guesses=:numGuess, finished=:finished, "
+    suffix = "guess" + str(nthGuess) + "=:guess" + " WHERE id=:id"
+
+    gameFinished = finished
+    if numGuesses - 1 == 0:
+        gameFinished = 1
+    await db.execute(sql + suffix, values={"numGuess": numGuesses - 1, "id": game[0], "finished": finished, "guess": word })
+
+
+@app.route("/game/<int:gameId>/guess", methods=["PATCH"])
+async def guess(gameId):
+    db = await _get_db()
+
+    body = await request.get_json()
+
+    userId = body.get("userId").lower()
+    word = body.get("word")
+
+    if not(userId) or not(word):
+        abort(400, "Please provide the user id and the guess word")
+
+    game = await db.fetch_one("SELECT * FROM game WHERE id=:id", values={"id": gameId})
+
+    # Check iff game exists
+    if not(game):
+        abort(404, "Could not find a game with this id")
+
+    user = await db.fetch_one("SELECT * FROM userData WHERE id=:userId", values={"userId": userId})
+
+    # Check if user exists
+    if not(user):
+        abort(404, "Could not find this user")
+
+    # Check if game is finished
+    if game[4] == 1:
+        abort(400, "This game has already ended")
+
+    # Check if word is valid
+    if len(word) != 5:
+        abort(400, "This is not a valid guess")
+
+    wordIsValid = False
+
+    # check if word is in correct table
+    correct = await db.fetch_one("SELECT word FROM correct WHERE word=:word", values={"word": word})
+
+    if not(correct):
+        valid = await db.fetch_one("SELECT word FROM valid WHERE word=:word", values={"word": word})
+        wordIsValid = valid is not None
+
+    # invalid guess
+    if not(wordIsValid) and not(correct):
+        abort(400, "Guess word is invalid")
+
+    # Not correct but valid
+    secretWord = await db.fetch_one("SELECT word FROM correct WHERE id=:id", values={"id": game[2]})
+    secretWord = secretWord[0]
+
+    # guessed correctly
+    if word == secretWord:
+        await updateGameState(game, word, db, 1)
+
+        return {"word": {"input": word, "valid": True, "correct": True}, 
+        "numGuesses": game[3] - 1}
+
+    await updateGameState(game, word, db, 0)
+
+    data = getGuessState(word, secretWord)
+
+    return {"word": {"input": word, "valid": True, "correct": False}, 
+        "gussesLeft": game[3] - 1, 
+        "data": data}
+
+@app.errorhandler(400)
+def noUserId(msg):
+    return {"error": str(msg).split(':', 1)[1][1:]}, 400
+
+@app.errorhandler(404)
+def userNotFound(msg):
+    return {"error": str(msg).split(':', 1)[1][1:]}, 404
 
 
 @app.route("/user/<int:userId>/games", methods=["GET"])
@@ -164,7 +235,6 @@ async def myGames(userId):
 
     for game in gamesList:
         res.append({"gameId": game.get("id"), "guesses": game.get("guesses"), "finished": True if game.get("finished") == 1 else False})
-    
 
     return res
 
@@ -177,7 +247,8 @@ async def getGame(gameId):
     if not(game):
         return {"message": "No game found with this id"}, 404
     
-    return {"gameId": game[0], "guesses": game[3], "finished": True if game[4] == 1 else False}
+    return await gameStateToDict(game)
+    # return {"gameId": game[0], "guesses": game[3], "finished": True if game[4] == 1 else False}
 
 # game
 # 0 = id
@@ -185,3 +256,9 @@ async def getGame(gameId):
 # 2 = wordId
 # 3 = guesses
 # 4 = finished
+# 5 = guess1
+# 6 = guess2
+# 7 = guess3
+# 8 = guess4
+# 9 = guess5
+# 10 = guess6
