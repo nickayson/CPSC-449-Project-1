@@ -338,9 +338,6 @@ async def myGames(userId):
 
     for game in gamesList:
         res.append({"gameId": game.get("id"), "guessesLeft": game.get("guesses"), "finished": True if game.get("finished") == 1 else False})
-        
-    if not(games):
-        return {"message": "No games found with this id"}, 404
 
     return res
 
