@@ -201,7 +201,7 @@ async def updateGameState(game, word, db, finished = 0):
     gameFinished = finished
     if numGuesses - 1 == 0:
         gameFinished = 1
-    await db.execute(sql + suffix, values={"numGuess": numGuesses - 1, "id": game[0], "finished": finished, "guess": word })
+    await db.execute(sql + suffix, values={"numGuess": numGuesses - 1, "id": game[0], "finished": gameFinished, "guess": word })
 
 # ---------------CREATE NEW GAME---------------
 
